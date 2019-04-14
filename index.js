@@ -39,7 +39,9 @@ async function getList() {
 
   for (let i = 1; i <= PAGE; i++) {
     console.log('请求页面：', listUrl + i)
-    const res = await request.get(listUrl + i)
+    const res = await request.get(listUrl + i).catch(err => {
+      console.error(err.message, err.response)
+    })
     const $ = cheerio.load(res.text)
     $('.pics li').each((index, el) => {
       const url = $(el).find('>a').attr('href')
@@ -84,7 +86,10 @@ async function getPic(obj) {
     console.log('[已存在DIR] ' + downPath)
   }
 
-
+  if (imgId !== '11856') {
+    console.log(imgId+'，跳过')
+    return
+  }
   let $imgWarps = $('.talk_pic p')
 
   for (let i = 0; i < $imgWarps.length; i++) {
@@ -93,9 +98,9 @@ async function getPic(obj) {
     await download(downPath, imgUrl, i + 1)
   }
 
-  let waitTime = random(0, 1000)
+  let waitTime = utils.random(200, 1200)
   console.log('等待：', waitTime)
-  await sleep(waitTime)
+  await utils.sleep(waitTime)
 }
 
 /**
@@ -127,9 +132,16 @@ async function download(dir, url, index, asyncFlag = false) {
 
     // await sleep(random(0, 500))
   } else {
-    const req = await request.get(url)
-    stream.write(req.body)
-    console.log('[已下载] ' + savePath)
+    const req = await request.get(url).catch(err => {
+      console.error('[ERR]', err.message)
+    })
+    if (req.status === 200 ) {
+      stream.write(req.body)
+      console.log('[已下载] ' + savePath)
+    } else {
+      console.error('[下载失败]', savePath)
+    }
+
   }
 }
 

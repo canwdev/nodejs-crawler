@@ -1,5 +1,14 @@
 // superagent 是方便的客户端请求代理模块
-const request = require('superagent')
+const defaults = require('superagent-defaults');
+const request = defaults()
+
+// 设置fake ua
+const userAgents = require('./assets/userAgents')
+function randua() {
+  return userAgents[parseInt(Math.random() * userAgents.length)]
+}
+request.set('User-Agent', randua())
+
 // 为服务器特别定制的，类似jQuery的实现
 const cheerio = require('cheerio')
 // 丰富了fs模块，同时支持async/await
@@ -9,6 +18,7 @@ const path = require('path')
 const sanitize = require("sanitize-filename");
 
 const utils = require('./assets/utils')
+
 
 const domain = 'http://ciyuandao.com'
 const listUrl = domain + '/photo/index/0-0-'
@@ -80,9 +90,12 @@ async function getPic(obj) {
   for (let i = 0; i < $imgWarps.length; i++) {
     const imgUrl = $imgWarps.eq(i).find('img').attr('src')
     // console.log('     ', imgUrl)
-    await download(downPath, imgUrl, i+1)
+    await download(downPath, imgUrl, i + 1)
   }
 
+  let waitTime = random(0, 1000)
+  console.log('等待：', waitTime)
+  await sleep(waitTime)
 }
 
 /**
@@ -94,16 +107,16 @@ async function getPic(obj) {
  */
 async function download(dir, url, index, asyncFlag = false) {
   // 去除无用后缀
-  url = url.split('?')[0]
+  // url = url.split('?')[0]
 
   let fileName = url.split('/').pop()
   if (index) {
-    fileName = index.toString().padStart(3,'0') + '.' + fileName
+    fileName = index.toString().padStart(3, '0') + '.' + fileName
   }
 
   const savePath = path.join(dir, fileName)
   let stream = fs.createWriteStream(savePath)
-  stream.on('finish', ()=>{
+  stream.on('finish', () => {
     console.log('[已下载] ' + savePath)
   })
 
@@ -112,7 +125,7 @@ async function download(dir, url, index, asyncFlag = false) {
     const req = request.get(url).binaryType(true)
     req.pipe(stream)
 
-    // await sleep(random(1500, 5000))
+    // await sleep(random(0, 500))
   } else {
     const req = await request.get(url)
     stream.write(req.body)

@@ -44,7 +44,7 @@ async function getList() {
     })
     const $ = cheerio.load(res.text)
 
-    provider.handleList($, ret)
+    provider.getList($, ret)
   }
 
   console.log('=== 🚧 列表请求完成 🚧 ===\n')
@@ -85,7 +85,12 @@ async function getPic(obj, curIndex, allLength) {
     return
   }
 
-  await provider.handleImages($, download, downPath)
+  let imgUrlList = provider.getImageUrlList($)
+
+  for (let i = 0; i < imgUrlList.length; i++) {
+    await download(downPath, imgUrlList[i], i + 1, imgUrlList.length)
+  }
+
 
   let waitTime = utils.random(200, 1200)
   console.log('[🕑getPic阶段完成，等待(ms)] ', waitTime)

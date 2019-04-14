@@ -20,26 +20,23 @@ const path = require('path')
 const sanitize = require("sanitize-filename")
 
 const utils = require('./assets/utils')
-// 自定义图片提供者
-const provider = require('./providers/ciyuandao')
-
-// request.get(url+1).then((res)=>{
-//   console.log(res.text)
-// })
+// 自定义图片提供者，通过自定义provider实现从不同网站爬取的功能
+const provider = require('./providers/warthunderWallpaper')
 
 /**
  * 获取图集列表，返回包含图集信息对象的数组
  * @returns {Promise<Array>}
  */
 async function getList() {
-  const PAGE = 1
+  const PAGE = 10
+  const INIT_PAGE = 1
   let ret = []
 
   console.log('=== 🚧 列表请求开始 🚧 ===')
 
-  for (let i = 1; i <= PAGE; i++) {
-    console.log('✔请求页面：', provider.listUrl + i)
-    const res = await request.get(provider.listUrl + i).catch(err => {
+  for (let i = INIT_PAGE; i <= PAGE; i++) {
+    console.log('✔请求页面：', provider.listUrl(i))
+    const res = await request.get(provider.listUrl(i)).catch(err => {
       console.error(err.message, err.response)
     })
     const $ = cheerio.load(res.text)
@@ -48,6 +45,7 @@ async function getList() {
   }
 
   console.log('=== 🚧 列表请求完成 🚧 ===\n')
+  console.log(ret)
   return ret
 }
 
@@ -65,11 +63,22 @@ async function getPic(obj, curIndex, allLength) {
   }
   const outputDirName = 'output'
   const outputDirPath = path.join(__dirname, outputDirName)
-  const res = await request.get(provider.domain + obj.url)
-  const $ = cheerio.load(res.text)
+  // 下载文件夹标号
+  let imgId = curIndex.toString().padStart(3, '0')
+  // 要下载的文件链接数组
+  let imgUrlList = []
 
-  const imgId = obj.url.substring(obj.url.lastIndexOf('/') + 1)
-  const folderName = sanitize(`${imgId}__${obj.author}__${obj.title}`, {replacement: ' '})
+  // 如果具有子页面链接
+  if (obj.url) {
+    const res = await request.get(provider.domain + obj.url)
+    const $ = cheerio.load(res.text)
+    imgUrlList = provider.getImageUrlList($)
+  } else {
+    imgUrlList = obj.links
+  }
+
+
+  const folderName = sanitize(`${imgId}__${obj.title}`, {replacement: ' '})
   const downPath = path.join(outputDirPath, folderName)
 
   // 如果不存在output文件夹则创建一个
@@ -84,8 +93,6 @@ async function getPic(obj, curIndex, allLength) {
     console.log(currentTip + '[⛔已存在DIR，跳过] ' + downPath)
     return
   }
-
-  let imgUrlList = provider.getImageUrlList($)
 
   for (let i = 0; i < imgUrlList.length; i++) {
     await download(downPath, imgUrlList[i], i + 1, imgUrlList.length)
@@ -138,7 +145,20 @@ async function download(dir, url, curIndex, allLength, asyncFlag = false) {
   } else {
     console.log(currentTip + '[🚀下载中] ' + savePath)
     await new Promise((resolve, reject) => {
-      request.get(url).pipe(stream)
+      let req = request.get(url)
+        .retry(2)
+        .accept('image/jpeg')
+        .timeout({
+          response: 5000,  // Wait 5 seconds for the server to start sending,
+          deadline: 120000, // but allow 2 minute for the file to finish loading.
+        })
+        // .catch(err => {
+        //   console.error('[❌下载失败]', err.message) //, err.response
+        //   debugger
+        //   reject()
+        // })
+        .pipe(stream)
+
 
       stream.on('finish', () => {
         // console.log('[已下载]')

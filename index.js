@@ -84,12 +84,14 @@ async function getPic(obj) {
     console.log('[创建DIR] ' + downPath)
   } else {
     console.log('[已存在DIR] ' + downPath)
-  }
-
-  if (imgId !== '11856') {
-    console.log(imgId+'，跳过')
+    console.log('跳过这个文件夹...')
     return
   }
+
+  // if (imgId !== '11856') {
+  //   console.log(imgId+'，跳过')
+  //   return
+  // }
   let $imgWarps = $('.talk_pic p')
 
   for (let i = 0; i < $imgWarps.length; i++) {
@@ -99,7 +101,7 @@ async function getPic(obj) {
   }
 
   let waitTime = utils.random(200, 1200)
-  console.log('等待：', waitTime)
+  console.log('[等待(ms)] ', waitTime)
   await utils.sleep(waitTime)
 }
 
@@ -111,8 +113,8 @@ async function getPic(obj) {
  * @param asyncFlag 是否开启异步下载，默认否
  */
 async function download(dir, url, index, asyncFlag = false) {
-  // 去除无用后缀
-  // url = url.split('?')[0]
+  // 去除无用后缀（原图）
+  url = url.split('?')[0]
 
   let fileName = url.split('/').pop()
   if (index) {
@@ -133,9 +135,10 @@ async function download(dir, url, index, asyncFlag = false) {
     // await sleep(random(0, 500))
   } else {
     const req = await request.get(url).catch(err => {
-      console.error('[ERR]', err.message)
+      console.error('[ERR]', err.message) //, err.response
+      // debugger
     })
-    if (req.status === 200 ) {
+    if (req) {
       stream.write(req.body)
       console.log('[已下载] ' + savePath)
     } else {

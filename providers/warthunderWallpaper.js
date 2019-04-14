@@ -11,7 +11,7 @@ function getList($, data) {
     let title = smallSrc.split('/').pop().split('.').shift()
     let links = []
 
-    $(el).find('.wallpapers__dimensions a').last().each((i, el)=>{
+    $(el).find('.wallpapers__dimensions a').each((i, el)=>{
       links.push('http:'+$(el).attr('href'))
     })
 

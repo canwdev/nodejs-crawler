@@ -3,6 +3,7 @@ const defaults = require('superagent-defaults');
 const request = defaults()
 
 // 设置fake UA
+// TODO: 验证每次请求的fakeUA是否相同
 const userAgents = require('./assets/userAgents')
 
 function randua() {
@@ -28,13 +29,19 @@ const provider = require('./providers/warthunderWallpaper')
  * @returns {Promise<Array>}
  */
 async function getList() {
-  const PAGE = 10
+  const PAGE = 12
   const INIT_PAGE = 1
   let ret = []
+
+  // TODO: 修复PAGE超出闪退
+  // TODO: 增加自定义PAGE、INIT_PAGE、IGNORE_PAGE
+  // TODO: 优化Windows下显示表情为方块？
+  // TODO: 新增providers规范说明文档，移除不必要注释
 
   console.log('=== 🚧 列表请求开始 🚧 ===')
 
   for (let i = INIT_PAGE; i <= PAGE; i++) {
+    // TODO: 增加count
     console.log('✔请求页面：', provider.listUrl(i))
     const res = await request.get(provider.listUrl(i)).catch(err => {
       console.error(err.message, err.response)
@@ -90,6 +97,7 @@ async function getPic(obj, curIndex, allLength) {
     await fs.mkdir(downPath)
     console.log(currentTip + '[✨创建DIR] ' + downPath)
   } else {
+    // TODO: 增加如果存在文件夹，检测内部文件是否存在，然后跳过文件，加个开关
     console.log(currentTip + '[⛔已存在DIR，跳过] ' + downPath)
     return
   }
@@ -130,6 +138,7 @@ async function download(dir, url, curIndex, allLength, asyncFlag = false) {
 
   if (asyncFlag) {
     // 异步下载
+    // TODO: 完善异步下载
     console.log(currentTip + '[🚀下载中] ' + savePath)
     stream.on('finish', () => {
       // console.log(currentTip + '[已下载] ')
@@ -158,7 +167,7 @@ async function download(dir, url, curIndex, allLength, asyncFlag = false) {
         //   reject()
         // })
         .pipe(stream)
-
+        // TODO: 修复下载失败闪退，如果必要，使用download库进行（多线程？）下载
 
       stream.on('finish', () => {
         // console.log('[已下载]')

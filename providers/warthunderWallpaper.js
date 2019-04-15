@@ -1,6 +1,6 @@
 const domain = 'https://warthunder.com'
 const config = {
-  outDir: 'output_wt',
+  outDir: 'output',
   fromPage: 1,
   toPage: 1,
   numberingFolder: true,

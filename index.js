@@ -1,5 +1,9 @@
-const defaults = require('superagent-defaults');
-const request = defaults()
+// const defaults = require('superagent-defaults');
+// const request = defaults()
+// TODO: 放弃superagent-defaults
+const request = require('superagent');
+require('superagent-proxy')(request);
+
 const cheerio = require('cheerio')
 const fs = require('fs-extra')
 const path = require('path')
@@ -7,17 +11,19 @@ const sanitize = require("sanitize-filename")
 const Log2f = require('./assets/log2file')
 
 const utils = require('./assets/utils')
-// 自定义图片提供者，通过自定义provider实现从不同网站爬取的功能
 
+// TODO:支持代理设置
+let proxy = 'http://127.0.0.1:1080';
 
 // 设置fake UA
 const userAgents = require('./assets/userAgents')
-
+// TODO 整合randua
 function randua() {
   return userAgents[parseInt(Math.random() * userAgents.length)]
 }
 
-request.set('User-Agent', randua())
+// request.set('User-Agent', randua())
+// 自定义图片提供者，通过自定义provider实现从不同网站爬取的功能
 const provider = require('./providers/ciyuandao')
 let options = {
   outDir: 'output',
@@ -30,6 +36,7 @@ let options = {
 options = Object.assign(options, provider.config)
 const OUT_DIR_PATH = path.join(__dirname, options.outDir)
 let log2f = new Log2f(path.join(OUT_DIR_PATH + '/crawler.log'), true)
+
 
 /**
  * 获取图集列表，返回包含图集信息对象的数组
@@ -49,9 +56,26 @@ async function getList() {
 
   for (let i = options.fromPage; i <= options.toPage; i++) {
     log2f.log(`[${i}/${options.toPage}][请求列表]`, provider.listUrl(i))
-    const res = await request.get(provider.listUrl(i)).catch(err => {
-      log2f.log('请求列表失败', err.message)  //, err.response
-    })
+
+    // TODO 尝试修复某网站301，自定义首部字段
+    const res = await request
+      .get(provider.listUrl(i))
+      .set({
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+        "accept-encoding": "gzip, deflate, br",
+        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,la;q=0.7,ja;q=0.6,zh-TW;q=0.5",
+        "cache-contro": "no-cache",
+        "pragma": "no-cache",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+        'cookie': '__cfduid=d7490f91491adefe580f0e55ed59c42931555346780'
+      })
+      // .redirects(0)
+      .retry(0)
+      .proxy(proxy)
+      .catch(err => {
+        log2f.log('请求列表失败', err.message, err.response)  //, err.response
+        debugger
+      })
 
     if (res) {
       const $ = cheerio.load(res.text)

@@ -1,6 +1,6 @@
 const domain = 'http://ciyuandao.com'
 const config = {
-  outDir: '次元岛',
+  outDir: 'output',
   fromPage: 30,
   toPage: 31,
   numberingFolder: true,

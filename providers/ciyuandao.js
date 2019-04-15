@@ -1,4 +1,11 @@
 const domain = 'http://ciyuandao.com'
+const config = {
+  outDir: '次元岛',
+  fromPage: 30,
+  toPage: 31,
+  numberingFolder: true,
+  numberingFile: true,
+}
 
 /**
  * 处理列表数据
@@ -7,7 +14,7 @@ const domain = 'http://ciyuandao.com'
  */
 function getList($, data) {
   $('.pics li').each((index, el) => {
-    const url = $(el).find('>a').attr('href')
+    const url = domain + $(el).find('>a').attr('href')
     const mid = url.substring(url.lastIndexOf('/') + 1)
     const title = $(el).find('p').eq(0).text().trim()
     const author = $(el).find('p').eq(1).text().trim()
@@ -35,7 +42,7 @@ function getImageUrlList($) {
 
 
 module.exports = {
-  domain,
+  config,
   listUrl: i => domain + '/photo/index/0-0-' + i,
   getList,
   getImageUrlList

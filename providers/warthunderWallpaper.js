@@ -1,4 +1,11 @@
 const domain = 'https://warthunder.com'
+const config = {
+  outDir: 'output_wt',
+  fromPage: 1,
+  toPage: 1,
+  numberingFolder: true,
+  numberingFile: true,
+}
 
 /**
  * 处理列表数据
@@ -11,8 +18,8 @@ function getList($, data) {
     let title = smallSrc.split('/').pop().split('.').shift()
     let links = []
 
-    $(el).find('.wallpapers__dimensions a').each((i, el)=>{
-      links.push('http:'+$(el).attr('href'))
+    $(el).find('.wallpapers__dimensions a').each((i, el) => {
+      links.push('http:' + $(el).attr('href'))
     })
 
     data.push({
@@ -33,9 +40,8 @@ function getImageUrlList($) {
 }
 
 
-
 module.exports = {
-  domain,
+  config,
   listUrl: i => domain + '/en/media/wallpapers/page/' + i,
   getList,
   getImageUrlList

@@ -18,31 +18,37 @@ function randua() {
 }
 
 request.set('User-Agent', randua())
-const provider = require('./providers/warthunderWallpaper')
+const provider = require('./providers/ciyuandao')
 let options = {
   outDir: 'output',
-  maxPage: 1,
-  initPage: 1,
-  numberingFolder: true,
-  numberingFile: true,
-  ignoreExistsFolder: false
+  fromPage: 1,
+  toPage: 1,
+  numberingFolder: false,
+  numberingFile: false,
+  ignoreExistsFolder: true
 }
+options = Object.assign(options, provider.config)
 const OUT_DIR_PATH = path.join(__dirname, options.outDir)
-let log2f = new Log2f(path.join(OUT_DIR_PATH + '/files.log'), true)
+let log2f = new Log2f(path.join(OUT_DIR_PATH + '/crawler.log'), true)
 
 /**
  * 获取图集列表，返回包含图集信息对象的数组
  * @returns {Promise<Array>}
  */
 async function getList() {
-  let ret = []
+  // 如果不存在output文件夹则创建一个
+  if (!fs.existsSync(OUT_DIR_PATH)) {
+    fs.mkdirSync(OUT_DIR_PATH);
+    log2f.log('[创建DIR] ' + OUT_DIR_PATH)
+  }
 
+  let ret = []
   // TODO: 新增providers规范说明文档，移除不必要注释
 
   log2f.log('=== 🚧 列表请求开始 🚧 ===')
 
-  for (let i = options.initPage; i <= options.maxPage; i++) {
-    log2f.log(`[${i}/${options.maxPage}][请求列表]`, provider.listUrl(i))
+  for (let i = options.fromPage; i <= options.toPage; i++) {
+    log2f.log(`[${i}/${options.toPage}][请求列表]`, provider.listUrl(i))
     const res = await request.get(provider.listUrl(i)).catch(err => {
       log2f.log('请求列表失败', err.message)  //, err.response
     })
@@ -58,7 +64,7 @@ async function getList() {
 
   log2f.log('=== 🚧 列表请求完成 🚧 ===\n')
 
-  Log2f.slog(JSON.stringify(ret), path.join(OUT_DIR_PATH + '/list.log'))
+  Log2f.slog(JSON.stringify(ret), path.join(OUT_DIR_PATH + '/resource.log'))
 
   return ret
 }
@@ -88,7 +94,7 @@ async function getFiles(obj, curIndex, allLength) {
 
   // 如果具有子页面链接
   if (obj.url) {
-    const res = await request.get(provider.domain + obj.url)
+    const res = await request.get(obj.url)
     const $ = cheerio.load(res.text)
     fileUrlList = provider.getImageUrlList($)
   } else {
@@ -99,16 +105,10 @@ async function getFiles(obj, curIndex, allLength) {
   const folderName = sanitize(`${folderNumber}__${obj.title}`, {replacement: ' '})
   const downPath = path.join(OUT_DIR_PATH, folderName)
 
-  // 如果不存在output文件夹则创建一个
-  if (!fs.existsSync(OUT_DIR_PATH)) {
-    fs.mkdirSync(OUT_DIR_PATH);
-    log2f.log(currentTip + '[创建DIR] ' + OUT_DIR_PATH)
-  }
   if (!fs.existsSync(downPath)) {
     await fs.mkdir(downPath)
     log2f.log(currentTip + '[创建DIR] ' + downPath)
   } else {
-    // TODO: 增加如果存在文件夹，检测内部文件是否存在，然后跳过文件，加个开关
     if (this.ignoreExistsFolder) {
       log2f.log(currentTip + '[已存在DIR，跳过] ' + downPath)
       return
@@ -122,8 +122,8 @@ async function getFiles(obj, curIndex, allLength) {
   }
 
 
-  let waitTime = utils.random(200, 1200)
-  log2f.log('[getPic阶段完成，等待(ms)] ', waitTime)
+  let waitTime = utils.random(500, 2000)
+  log2f.log(currentTip + '[列表文件下载完成，等待(ms)] ', waitTime)
   await utils.sleep(waitTime)
 }
 
@@ -150,7 +150,7 @@ async function download(dir, url, curIndex, allLength, asyncFlag = false) {
 
   const savePath = path.join(dir, fileName)
   if (fs.existsSync(savePath)) {
-    log2f.log('[文件已存在，忽略]' + savePath)
+    log2f.log(currentTip + '[文件已存在，跳过] ' + savePath)
     return
   }
 

@@ -21,9 +21,9 @@ function appendZeroToLength(value, length) {
  */
 function getDateAsText() {
   var currentDate = new Date();
-  return "[" + currentDate.getDate() + "/"
-    + (currentDate.getMonth() + 1) + "/"
-    + currentDate.getFullYear() + " @ "
+  return "[" + currentDate.getFullYear() + "."
+    + (currentDate.getMonth() + 1) + "."
+    + currentDate.getDate() + " @ "
     + currentDate.getHours() + ":"
     + currentDate.getMinutes() + ":"
     + currentDate.getSeconds() + "]"
@@ -55,13 +55,19 @@ class Log2f {
     this.path = path
     this.print = print
   }
+
   log(...text) {
     if (this.print) {
       console.log(...text)
     }
-    let str = [...text].join(' ')
+    let str = ''
+    let args = [...text]
+    args.forEach((v, i) => {
+      str += typeof v === 'object' ? JSON.stringify(v) : v
+    })
     logToFile(str, this.path, this.print)
   }
+
   static slog(...args) {
     logToFile(...args)
   }

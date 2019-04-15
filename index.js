@@ -1,9 +1,16 @@
-// superagent 是方便的客户端请求代理模块
 const defaults = require('superagent-defaults');
 const request = defaults()
+const cheerio = require('cheerio')
+const fs = require('fs-extra')
+const path = require('path')
+const sanitize = require("sanitize-filename")
+const Log2f = require('./assets/log2file')
+
+const utils = require('./assets/utils')
+// 自定义图片提供者，通过自定义provider实现从不同网站爬取的功能
+
 
 // 设置fake UA
-// TODO: 验证每次请求的fakeUA是否相同
 const userAgents = require('./assets/userAgents')
 
 function randua() {
@@ -11,48 +18,48 @@ function randua() {
 }
 
 request.set('User-Agent', randua())
-
-// 为服务器特别定制的，类似jQuery的实现
-const cheerio = require('cheerio')
-// 丰富了fs模块，同时支持async/await
-const fs = require('fs-extra')
-const path = require('path')
-// 净化文件名
-const sanitize = require("sanitize-filename")
-
-const utils = require('./assets/utils')
-// 自定义图片提供者，通过自定义provider实现从不同网站爬取的功能
 const provider = require('./providers/warthunderWallpaper')
+let options = {
+  outDir: 'output',
+  maxPage: 1,
+  initPage: 1,
+  numberingFolder: true,
+  numberingFile: true,
+  ignoreExistsFolder: false
+}
+const OUT_DIR_PATH = path.join(__dirname, options.outDir)
+let log2f = new Log2f(path.join(OUT_DIR_PATH + '/files.log'), true)
 
 /**
  * 获取图集列表，返回包含图集信息对象的数组
  * @returns {Promise<Array>}
  */
 async function getList() {
-  const PAGE = 12
-  const INIT_PAGE = 1
   let ret = []
 
-  // TODO: 修复PAGE超出闪退
-  // TODO: 增加自定义PAGE、INIT_PAGE、IGNORE_PAGE
-  // TODO: 优化Windows下显示表情为方块？
   // TODO: 新增providers规范说明文档，移除不必要注释
 
-  console.log('=== 🚧 列表请求开始 🚧 ===')
+  log2f.log('=== 🚧 列表请求开始 🚧 ===')
 
-  for (let i = INIT_PAGE; i <= PAGE; i++) {
-    // TODO: 增加count
-    console.log('✔请求页面：', provider.listUrl(i))
+  for (let i = options.initPage; i <= options.maxPage; i++) {
+    log2f.log(`[${i}/${options.maxPage}][请求列表]`, provider.listUrl(i))
     const res = await request.get(provider.listUrl(i)).catch(err => {
-      console.error(err.message, err.response)
+      log2f.log('请求列表失败', err.message)  //, err.response
     })
-    const $ = cheerio.load(res.text)
 
-    provider.getList($, ret)
+    if (res) {
+      const $ = cheerio.load(res.text)
+      provider.getList($, ret)
+    } else {
+      ret.push({})
+    }
+
   }
 
-  console.log('=== 🚧 列表请求完成 🚧 ===\n')
-  console.log(ret)
+  log2f.log('=== 🚧 列表请求完成 🚧 ===\n')
+
+  Log2f.slog(JSON.stringify(ret), path.join(OUT_DIR_PATH + '/list.log'))
+
   return ret
 }
 
@@ -63,52 +70,60 @@ async function getList() {
  * @param allLength   可选，用于显示全部文件数量
  * @returns {Promise<void>}
  */
-async function getPic(obj, curIndex, allLength) {
+async function getFiles(obj, curIndex, allLength) {
   let currentTip = ''
   if (curIndex && allLength) {
     currentTip = `[${curIndex}/${allLength}]`
   }
-  const outputDirName = 'output'
-  const outputDirPath = path.join(__dirname, outputDirName)
+
+  if (Object.keys(obj).length === 0) {
+    log2f.log(currentTip + ' 内容为空，跳过')
+    return
+  }
+
   // 下载文件夹标号
-  let imgId = curIndex.toString().padStart(3, '0')
+  let folderNumber = options.numberingFolder ? curIndex.toString().padStart(3, '0') : ''
   // 要下载的文件链接数组
-  let imgUrlList = []
+  let fileUrlList = []
 
   // 如果具有子页面链接
   if (obj.url) {
     const res = await request.get(provider.domain + obj.url)
     const $ = cheerio.load(res.text)
-    imgUrlList = provider.getImageUrlList($)
+    fileUrlList = provider.getImageUrlList($)
   } else {
-    imgUrlList = obj.links
+    fileUrlList = obj.links
   }
 
 
-  const folderName = sanitize(`${imgId}__${obj.title}`, {replacement: ' '})
-  const downPath = path.join(outputDirPath, folderName)
+  const folderName = sanitize(`${folderNumber}__${obj.title}`, {replacement: ' '})
+  const downPath = path.join(OUT_DIR_PATH, folderName)
 
   // 如果不存在output文件夹则创建一个
-  if (!fs.existsSync(outputDirPath)) {
-    fs.mkdirSync(outputDirPath);
-    console.log(currentTip + '[✨创建DIR] ' + outputDirPath)
+  if (!fs.existsSync(OUT_DIR_PATH)) {
+    fs.mkdirSync(OUT_DIR_PATH);
+    log2f.log(currentTip + '[创建DIR] ' + OUT_DIR_PATH)
   }
   if (!fs.existsSync(downPath)) {
     await fs.mkdir(downPath)
-    console.log(currentTip + '[✨创建DIR] ' + downPath)
+    log2f.log(currentTip + '[创建DIR] ' + downPath)
   } else {
     // TODO: 增加如果存在文件夹，检测内部文件是否存在，然后跳过文件，加个开关
-    console.log(currentTip + '[⛔已存在DIR，跳过] ' + downPath)
-    return
+    if (this.ignoreExistsFolder) {
+      log2f.log(currentTip + '[已存在DIR，跳过] ' + downPath)
+      return
+    } else {
+      log2f.log(currentTip + '[已存在DIR] ' + downPath)
+    }
   }
 
-  for (let i = 0; i < imgUrlList.length; i++) {
-    await download(downPath, imgUrlList[i], i + 1, imgUrlList.length)
+  for (let i = 0; i < fileUrlList.length; i++) {
+    await download(downPath, fileUrlList[i], i + 1, fileUrlList.length)
   }
 
 
   let waitTime = utils.random(200, 1200)
-  console.log('[🕑getPic阶段完成，等待(ms)] ', waitTime)
+  log2f.log('[getPic阶段完成，等待(ms)] ', waitTime)
   await utils.sleep(waitTime)
 }
 
@@ -129,30 +144,35 @@ async function download(dir, url, curIndex, allLength, asyncFlag = false) {
   url = url.split('?')[0]
 
   let fileName = url.split('/').pop()
-  if (curIndex) {
+  if (options.numberingFile && curIndex) {
     fileName = curIndex.toString().padStart(3, '0') + '.' + fileName
   }
 
   const savePath = path.join(dir, fileName)
+  if (fs.existsSync(savePath)) {
+    log2f.log('[文件已存在，忽略]' + savePath)
+    return
+  }
+
   let stream = fs.createWriteStream(savePath)
 
   if (asyncFlag) {
     // 异步下载
     // TODO: 完善异步下载
-    console.log(currentTip + '[🚀下载中] ' + savePath)
+    log2f.log(currentTip + '[下载中] ' + url)
     stream.on('finish', () => {
-      // console.log(currentTip + '[已下载] ')
+      // log2f.log(currentTip + '[已下载] ')
       resolve()
     })
     stream.on('error', (err) => {
-      console.error(currentTip + '[❌文件保存错误]', err)
+      log2f.log(currentTip + '[文件保存错误]', err)
       debugger
       reject()
     })
     const res = request.get(url).pipe(stream)
     await sleep(random(0, 500))
   } else {
-    console.log(currentTip + '[🚀下载中] ' + savePath)
+    log2f.log(currentTip + '[下载中] ' + url)
     await new Promise((resolve, reject) => {
       let req = request.get(url)
         .retry(2)
@@ -162,19 +182,19 @@ async function download(dir, url, curIndex, allLength, asyncFlag = false) {
           deadline: 120000, // but allow 2 minute for the file to finish loading.
         })
         // .catch(err => {
-        //   console.error('[❌下载失败]', err.message) //, err.response
+        //   log2f.log('[下载失败]', err.message) //, err.response
         //   debugger
         //   reject()
         // })
         .pipe(stream)
-        // TODO: 修复下载失败闪退，如果必要，使用download库进行（多线程？）下载
+      // TODO: 修复下载失败闪退，如果必要，使用download库进行（多线程？）下载
 
       stream.on('finish', () => {
-        // console.log('[已下载]')
+        // log2f.log('[已下载]')
         resolve()
       })
       stream.on('error', (err) => {
-        console.error(currentTip + '[❌文件保存错误]', err)
+        log2f.log(currentTip + '[文件保存错误]', err)
         debugger
         reject()
       })
@@ -185,9 +205,9 @@ async function download(dir, url, curIndex, allLength, asyncFlag = false) {
 async function init() {
   let list = await getList()
   for (let i = 0; i < list.length; i++) {
-    await getPic(list[i], i + 1, list.length)
+    await getFiles(list[i], i + 1, list.length)
   }
-  console.log('👍✨全部下载完成！🎉🎉')
+  log2f.log('👍全部下载完成！🎉🎉')
 }
 
 init()

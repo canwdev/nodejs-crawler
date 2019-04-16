@@ -3,7 +3,7 @@
  */
 
 // Import.
-const fs = require('fs');
+const fs = require('fs')
 
 /**
  * Append zero to length.
@@ -12,7 +12,7 @@ const fs = require('fs');
  * @returns {string} String with appended zeros id need it.
  */
 function appendZeroToLength(value, length) {
-  return `${value}`.padStart(length, 0);
+  return `${value}`.padStart(length, 0)
 }
 
 /**
@@ -20,7 +20,7 @@ function appendZeroToLength(value, length) {
  * @returns {string} Date as text. Sample: "2018.12.03, 07:32:13.0162 UTC".
  */
 function getDateAsText() {
-  var currentDate = new Date();
+  var currentDate = new Date()
   return "[" + currentDate.getFullYear() + "."
     + (currentDate.getMonth() + 1) + "."
     + currentDate.getDate() + " @ "
@@ -36,22 +36,27 @@ function getDateAsText() {
  */
 function logToFile(text, file) {
   // Define file name.
-  const filename = file ? file : 'default.log';
+  const filename = file ? file : 'default.log'
 
   // Define log text.
-  const logText = getDateAsText() + '' + text + '\r\n';
+  const logText = getDateAsText() + '' + text + '\r\n'
 
   // Save log to file.
   fs.appendFile(filename, logText, 'utf8', function (error) {
     if (error) {
       // If error - show in console.
-      console.log(getDateAsText() + ' -> ' + error);
+      console.log(getDateAsText() + ' -> ' + error)
     }
-  });
+  })
 }
 
 class Log2f {
-  constructor(path, print = false) {
+  /**
+   * 打印到文件Log2f构造器
+   * @param path    目标文件路径
+   * @param print   是否同时输出到console
+   */
+  constructor(path, print = true) {
     this.path = path
     this.print = print
   }
@@ -65,7 +70,7 @@ class Log2f {
     args.forEach((v, i) => {
       str += typeof v === 'object' ? JSON.stringify(v) : v
     })
-    logToFile(str, this.path, this.print)
+    logToFile(str, this.path)
   }
 
   static slog(...args) {
@@ -74,4 +79,4 @@ class Log2f {
 }
 
 // Export.
-module.exports = Log2f;
+module.exports = Log2f

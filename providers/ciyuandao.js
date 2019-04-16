@@ -7,11 +7,6 @@ const config = {
   numberingFile: false,
 }
 
-/**
- * 处理列表数据
- * @param $     传入的一个cheerio对象用于读取dom cheerio.load(res.text)
- * @param data  要操作的数组，返回格式约定为{url,title}对象构成的数组
- */
 function getList($, data) {
   $('.pics li').each((index, el) => {
     const url = domain + $(el).find('>a').attr('href')
@@ -25,11 +20,6 @@ function getList($, data) {
   })
 }
 
-/**
- * 获取图片下载链接数组
- * @param $   传入的一个cheerio对象用于读取dom cheerio.load(res.text)
- * @returns {Array} 图片链接的数组
- */
 function getImageUrlList($) {
   let $imgWarps = $('.talk_pic p')
   let ret = []

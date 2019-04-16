@@ -45,6 +45,9 @@ if (options.proxy) {
   log2f.log('[使用代理] ' + options.proxy)
 }
 
+// TODO 尝试增加单页上一页/下一页抓取，实现这种模块化接口
+// TODO 尝试增加页面通过ajax获取数据的抓取模式
+
 /**
  * 获取图集列表，返回包含图集信息对象的数组
  * @returns {Promise<Array>}
@@ -57,7 +60,7 @@ async function getList() {
   for (let i = options.fromPage; i <= options.toPage; i++) {
     log2f.log(`[${i}/${options.toPage}][请求列表] `, provider.listUrl(i))
 
-    // TODO 尝试修复某网站301，自定义首部字段
+    // TODO 使用PhantomJS实现模拟浏览器请求，解决某站301错误
     const res = await request
       .get(provider.listUrl(i))
       .set(options.header)
@@ -171,9 +174,8 @@ async function getFiles(obj, curIndex, allLength) {
  * @param dir         保存路径
  * @param curIndex    可选，保存文件的编号
  * @param allLength   可选，用于显示全部文件数量
- * @param asyncFlag   是否开启异步下载，默认否
  */
-async function handleDownload(url, dir, curIndex, allLength, asyncFlag = false) {
+async function handleDownload(url, dir, curIndex, allLength) {
   // TODO: 显示下载进度条？
   let currentTip = ''
   if (curIndex && allLength) {
@@ -193,69 +195,24 @@ async function handleDownload(url, dir, curIndex, allLength, asyncFlag = false) 
     return
   }
 
-  // let stream = fs.createWriteStream(savePath)
+  log2f.log(currentTip + '[下载中] ' + url)
 
-  if (asyncFlag) {
-    // 异步下载
+  await new Promise((resolve, reject) => {
 
-    /*log2f.log(currentTip + '[下载中] ' + url)
-    stream.on('finish', () => {
-      // log2f.log(currentTip + '[已下载] ')
+    download(url, dir, {
+      filename: fileName,
+      proxy: options.proxy
+    }).then(() => {
+      log2f.log(currentTip + '[已下载] ' + savePath)
       resolve()
-    })
-    stream.on('error', (err) => {
-      log2f.log(currentTip + '[文件保存错误]', err)
+    }).catch(err => {
+      log2f.log(currentTip + '[下载失败] ', err.message, err.response)
       debugger
       reject()
     })
-    const res = request.get(url).pipe(stream)*/
-    await sleep(random(0, 500))
-  } else {
-    log2f.log(currentTip + '[下载中] ' + url)
 
-    await new Promise((resolve, reject) => {
+  })
 
-      download(url, dir, {
-        filename: fileName,
-        proxy: options.proxy
-      }).then(() => {
-        log2f.log(currentTip + '[已下载] ' + savePath)
-        resolve()
-      }).catch(err => {
-        log2f.log(currentTip + '[下载失败] ', err.message, err.response)
-        debugger
-        reject()
-      })
-
-    })
-
-    /*await new Promise((resolve, reject) => {
-      let req = request.get(url)
-        .retry(2)
-        .accept('image/jpeg')
-        .timeout({
-          response: 5000,  // Wait 5 seconds for the server to start sending,
-          deadline: 120000, // but allow 2 minute for the file to finish loading.
-        })
-        // .catch(err => {
-        //   log2f.log('[下载失败]', err.message) //, err.response
-        //   debugger
-        //   reject()
-        // })
-        .pipe(stream)
-      // TODO: 修复下载失败闪退，如果必要，使用download库进行（多线程？）下载
-
-      stream.on('finish', () => {
-        // log2f.log('[已下载]')
-        resolve()
-      })
-      stream.on('error', (err) => {
-        log2f.log(currentTip + '[文件保存错误]', err)
-        debugger
-        reject()
-      })
-    })*/
-  }
 }
 
 async function init() {

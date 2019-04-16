@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon --inspect-brk index.js"
+    "start": "node run.js",
+    "dev": "nodemon --inspect-brk run.js"
   },
   "author": "",
   "license": "ISC",

@@ -1,5 +1,5 @@
 const domain = 'https://warthunder.com'
-const config = {
+const options = {
   outDir: 'output/wtw',
   fromPage: 1,
   toPage: 1,
@@ -31,7 +31,7 @@ function getImageUrlList($) {
 }
 
 module.exports = {
-  config,
+  options,
   listUrl: i => domain + '/en/media/wallpapers/page/' + i,
   getList,
   getImageUrlList

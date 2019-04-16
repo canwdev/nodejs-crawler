@@ -1,5 +1,5 @@
 const domain = 'https://www.monkeyuser.com'
-const config = {
+const options = {
   outDir: 'output/monkeyuser',
   fromPage: 1,
   toPage: 10,
@@ -30,7 +30,7 @@ function getImageUrlList($) {
 }
 
 module.exports = {
-  config,
+  options,
   listUrl: () => domain + '/2018/reminiscing/',
   getList,
   getImageUrlList

@@ -1,5 +1,5 @@
 const domain = 'http://ciyuandao.com'
-const config = {
+const options = {
   outDir: 'output/cos',
   fromPage: 1,
   toPage: 1,
@@ -32,7 +32,7 @@ function getImageUrlList($) {
 
 
 module.exports = {
-  config,
+  options,
   listUrl: i => domain + '/photo/index/0-0-' + i,
   getList,
   getImageUrlList

@@ -181,13 +181,6 @@ domutils@^1.5.1:
     dom-serializer "0"
     domelementtype "1"
 
-emitter-component@~1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/emitter-component/-/emitter-component-1.0.1.tgz#89b1bf871b5adbb875e1f3ee25211311fc5a3163"
-  integrity sha1-ibG/hxta27h14fPuJSETEfxaMWM=
-  dependencies:
-    indexof "0.0.1"
-
 entities@^1.1.1, entities@~1.1.1:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/entities/-/entities-1.1.2.tgz#bdfa735299664dfafd34529ed4f8522a275fea56"
@@ -339,11 +332,6 @@ iconv-lite@0.4.23:
   integrity sha1-KXhx9jvlB63Pv8pxXQzQ7thOmmM=
   dependencies:
     safer-buffer ">= 2.1.2 < 3"
-
-indexof@0.0.1:
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/indexof/-/indexof-0.0.1.tgz#82dc336d232b9062179d05ab3293a66059fd435d"
-  integrity sha1-gtwzbSMrkGIXnQWrMpOmYFn9Q10=
 
 inherits@2.0.3, inherits@^2.0.1, inherits@^2.0.3, inherits@~2.0.1:
   version "2.0.3"
@@ -608,13 +596,6 @@ string_decoder@~0.10.x:
   version "0.10.31"
   resolved "http://registry.npm.taobao.org/string_decoder/download/string_decoder-0.10.31.tgz#62e203bc41766c6c28c9fc84301dab1c5310fa94"
   integrity sha1-YuIDvEF2bGwoyfyEMB2rHFMQ+pQ=
-
-superagent-defaults@^0.1.14:
-  version "0.1.14"
-  resolved "https://registry.yarnpkg.com/superagent-defaults/-/superagent-defaults-0.1.14.tgz#0539c5a6eef17605d41b0b924a62911913b34178"
-  integrity sha1-BTnFpu7xdgXUGwuSSmKRGROzQXg=
-  dependencies:
-    emitter-component "~1.0.1"
 
 superagent-proxy@^2.0.0:
   version "2.0.0"

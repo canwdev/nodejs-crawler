@@ -1,10 +1,11 @@
 const domain = 'https://warthunder.com'
 const config = {
-  outDir: 'output',
+  outDir: 'output/wtw',
   fromPage: 1,
   toPage: 1,
   numberingFolder: true,
   numberingFile: true,
+  proxy: 'http://127.0.0.1:1080',
 }
 
 /**

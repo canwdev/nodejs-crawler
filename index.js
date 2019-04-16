@@ -1,79 +1,70 @@
+const userAgents = require('./assets/userAgents')
+
 // const defaults = require('superagent-defaults');
 // const request = defaults()
-// TODO: 放弃superagent-defaults
+// request.set('User-Agent', userAgents.random())
 const request = require('superagent');
+// 设置代理
 require('superagent-proxy')(request);
-
 const cheerio = require('cheerio')
 const fs = require('fs-extra')
 const path = require('path')
 const sanitize = require("sanitize-filename")
-const Log2f = require('./assets/log2file')
 
+const Log2f = require('./assets/log2file')
 const utils = require('./assets/utils')
 
-// TODO:支持代理设置
-let proxy = 'http://127.0.0.1:1080';
 
-// 设置fake UA
-const userAgents = require('./assets/userAgents')
-// TODO 整合randua
-function randua() {
-  return userAgents[parseInt(Math.random() * userAgents.length)]
-}
-
-// request.set('User-Agent', randua())
-// 自定义图片提供者，通过自定义provider实现从不同网站爬取的功能
-const provider = require('./providers/ciyuandao')
+// 自定义provider，实现从不同网站爬取数据
+const provider = require('./providers/warthunderWallpaper')
 let options = {
-  outDir: 'output',
-  fromPage: 1,
-  toPage: 1,
-  numberingFolder: false,
-  numberingFile: false,
-  ignoreExistsFolder: true
+  outDir: 'output',             // 输出根文件夹（相对当前路径）
+  fromPage: 1,                  // 爬取开始页面下标
+  toPage: 1,                    // 爬取结束页面下标
+  numberingFolder: false,       // 用数字编号文件夹
+  numberingFile: false,         // 用数字编号文件
+  ignoreExistsFolder: true,     // 跳过已存在的文件夹
+  proxy: null,                  // 是否使用代理，http://127.0.0.1:1080
+  header: {                     // 定义请求头部
+    "User-Agent": userAgents.default,
+  }
 }
 options = Object.assign(options, provider.config)
 const OUT_DIR_PATH = path.join(__dirname, options.outDir)
 let log2f = new Log2f(path.join(OUT_DIR_PATH + '/crawler.log'), true)
 
+// 如果不存在output文件夹则创建一个
+if (!fs.existsSync(OUT_DIR_PATH)) {
+  fs.mkdirSync(OUT_DIR_PATH);
+  log2f.log('[创建DIR] ' + OUT_DIR_PATH)
+}
+
+if (options.proxy) {
+  log2f.log('[使用代理] ' + options.proxy)
+}
 
 /**
  * 获取图集列表，返回包含图集信息对象的数组
  * @returns {Promise<Array>}
  */
 async function getList() {
-  // 如果不存在output文件夹则创建一个
-  if (!fs.existsSync(OUT_DIR_PATH)) {
-    fs.mkdirSync(OUT_DIR_PATH);
-    log2f.log('[创建DIR] ' + OUT_DIR_PATH)
-  }
-
   let ret = []
   // TODO: 新增providers规范说明文档，移除不必要注释
 
   log2f.log('=== 🚧 列表请求开始 🚧 ===')
 
   for (let i = options.fromPage; i <= options.toPage; i++) {
-    log2f.log(`[${i}/${options.toPage}][请求列表]`, provider.listUrl(i))
+    log2f.log(`[${i}/${options.toPage}][请求列表] `, provider.listUrl(i))
 
     // TODO 尝试修复某网站301，自定义首部字段
     const res = await request
       .get(provider.listUrl(i))
-      .set({
-        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-        "accept-encoding": "gzip, deflate, br",
-        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,la;q=0.7,ja;q=0.6,zh-TW;q=0.5",
-        "cache-contro": "no-cache",
-        "pragma": "no-cache",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
-        'cookie': '__cfduid=d7490f91491adefe580f0e55ed59c42931555346780'
-      })
+      .set(options.header)
+      .proxy(options.proxy)
       // .redirects(0)
-      .retry(0)
-      .proxy(proxy)
+      // .retry(0)
       .catch(err => {
-        log2f.log('请求列表失败', err.message, err.response)  //, err.response
+        log2f.log(`[${i}/${options.toPage}][请求列表失败] `, err.message, err.response)  //, err.response
         debugger
       })
 
@@ -86,9 +77,8 @@ async function getList() {
 
   }
 
-  log2f.log('=== 🚧 列表请求完成 🚧 ===\n')
-
   Log2f.slog(JSON.stringify(ret), path.join(OUT_DIR_PATH + '/resource.log'))
+  log2f.log('=== 🚧 列表请求完成 🚧 ===\n')
 
   return ret
 }
@@ -118,7 +108,14 @@ async function getFiles(obj, curIndex, allLength) {
 
   // 如果具有子页面链接
   if (obj.url) {
-    const res = await request.get(obj.url)
+    const res = await request
+      .get(obj.url)
+      .set(options.header)
+      .proxy(options.proxy)
+      .catch(err => {
+        log2f.log(currentTip + '[内容获取失败]', err.message, err.response)  //, err.response
+        debugger
+      })
     const $ = cheerio.load(res.text)
     fileUrlList = provider.getImageUrlList($)
   } else {
@@ -231,7 +228,7 @@ async function init() {
   for (let i = 0; i < list.length; i++) {
     await getFiles(list[i], i + 1, list.length)
   }
-  log2f.log('👍全部下载完成！🎉🎉')
+  log2f.log('=== 全部下载完成! ===\n')
 }
 
 init()

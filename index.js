@@ -49,9 +49,8 @@ if (options.proxy) {
  */
 async function getList() {
   let ret = []
-  // TODO: 新增providers规范说明文档，移除不必要注释
 
-  log2f.log('=== 🚧 列表请求开始 🚧 ===')
+  log2f.log('=== 🚧 获取列表开始 🚧 ===')
 
   for (let i = options.fromPage; i <= options.toPage; i++) {
     log2f.log(`[${i}/${options.toPage}][请求列表] `, provider.listUrl(i))
@@ -78,7 +77,7 @@ async function getList() {
   }
 
   Log2f.slog(JSON.stringify(ret), path.join(OUT_DIR_PATH + '/resource.log'))
-  log2f.log('=== 🚧 列表请求完成 🚧 ===\n')
+  log2f.log('=== 🚧 列表获取完成 🚧 ===\n')
 
   return ret
 }

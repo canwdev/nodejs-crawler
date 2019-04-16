@@ -22,6 +22,7 @@ let options = {
   outDir: 'output',             // 输出根文件夹（相对当前路径）
   fromPage: 1,                  // 爬取开始页面下标
   toPage: 1,                    // 爬取结束页面下标
+  pnMode: false,                // 上一页(previous)/下一页(next)模式
   numberingFolder: false,       // 用数字编号文件夹
   numberingFile: false,         // 用数字编号文件
   ignoreExistsFolder: true,     // 跳过已存在的文件夹
@@ -45,7 +46,6 @@ if (options.proxy) {
   log2f.log('[使用代理] ' + options.proxy)
 }
 
-// TODO 尝试增加单页上一页/下一页抓取，实现这种模块化接口
 // TODO 尝试增加页面通过ajax获取数据的抓取模式
 
 /**
@@ -57,16 +57,26 @@ async function getList() {
 
   log2f.log('=== 🚧 获取列表开始 🚧 ===')
 
+  let url = ''
   for (let i = options.fromPage; i <= options.toPage; i++) {
-    log2f.log(`[${i}/${options.toPage}][请求列表] `, provider.listUrl(i))
+    if (options.pnMode) {
+      // pnMode
+      if (url === '') {
+        // 获取第一页链接（仅一第次）
+        url = provider.listUrl()
+      }
+    } else {
+      // 正常模式
+      url = provider.listUrl(i)
+    }
+
+    log2f.log(`[${i}/${options.toPage}][请求列表] `, url)
 
     // TODO 使用PhantomJS实现模拟浏览器请求，解决某站301错误
     const res = await request
-      .get(provider.listUrl(i))
+      .get(url)
       .set(options.header)
       .proxy(options.proxy)
-      // .redirects(0)
-      // .retry(0)
       .catch(err => {
         log2f.log(`[${i}/${options.toPage}][请求列表失败] `, err.message, err.response)  //, err.response
         debugger
@@ -74,12 +84,17 @@ async function getList() {
 
     if (res) {
       const $ = cheerio.load(res.text)
-      provider.getList($, ret)
+      // 仅当pnMode开启才有newUrl
+      let newUrl = provider.getList($, ret)
+      if (newUrl && options.pnMode) {
+        url = newUrl
+      }
     } else {
       ret.push({})
     }
 
   }
+
 
   Log2f.slog(JSON.stringify(ret), path.join(OUT_DIR_PATH + '/resource.log'))
   log2f.log('=== 🚧 列表获取完成 🚧 ===\n')
@@ -106,7 +121,7 @@ async function getFiles(obj, curIndex, allLength) {
   }
 
   // 下载文件夹标号
-  let folderNumber = options.numberingFolder ? curIndex.toString().padStart(3, '0') : ''
+  let folderNumber = options.numberingFolder ? curIndex.toString().padStart(3, '0') + '__' : ''
   // 要下载的文件链接数组
   let fileUrlList = []
 
@@ -127,7 +142,7 @@ async function getFiles(obj, curIndex, allLength) {
   }
 
 
-  const folderName = sanitize(`${folderNumber}__${obj.title}`, {replacement: ' '})
+  const folderName = sanitize(`${folderNumber}${obj.title}`, {replacement: ' '})
   const downPath = path.join(OUT_DIR_PATH, folderName)
 
   if (!fs.existsSync(downPath)) {
@@ -143,6 +158,17 @@ async function getFiles(obj, curIndex, allLength) {
   }
 
   const fileCount = fileUrlList.length
+
+  // 如果是pnMode，则每页只包含一张图片所以直接并发下载
+  if (options.pnMode && options.concurrentDownload) {
+    handleDownload(fileUrlList[0], downPath, curIndex, allLength)
+
+    let waitTime = utils.random(10, 500)
+    // log2f.log(currentTip + '[并发限制等待(ms)] ', waitTime)
+    await utils.sleep(waitTime)
+    return
+  }
+
   if (options.concurrentDownload) {
     let promises = []
     for (let i = 0; i < fileCount; i++) {
@@ -182,7 +208,13 @@ async function handleDownload(url, dir, curIndex, allLength) {
     currentTip = `[${curIndex}/${allLength}]`
   }
   // 去除无用后缀（原图）
-  url = url.split('?')[0]
+  if (url) {
+    url = url.split('?')[0]
+  } else {
+    log2f.log(currentTip + '[下载失败，无效的链接]')
+    return
+  }
+
 
   let fileName = url.split('/').pop()
   if (options.numberingFile && curIndex) {
@@ -220,7 +252,12 @@ async function init() {
   for (let i = 0; i < list.length; i++) {
     await getFiles(list[i], i + 1, list.length)
   }
-  log2f.log('=== 全部下载完成! ===\n')
+  if (options.pnMode && options.concurrentDownload) {
+    log2f.log('=== 执行完成，请等待异步任务结束 ===\n')
+  } else {
+    log2f.log('=== 全部下载完成! ===\n')
+
+  }
 }
 
 init()

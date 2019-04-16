@@ -22,6 +22,7 @@ const config = {
  * 处理列表数据
  * @param $     传入的一个cheerio对象用于读取dom cheerio.load(res.text)
  * @param data  要操作的数组，返回格式约定为{url,title,links(可选)}对象构成的数组，如果不传url，则links必传
+ * pnMode说明：返回一个链接，指向上一页或下一页
  */
 function getList($, data) {
 }

@@ -3,13 +3,14 @@ const userAgents = require('./assets/userAgents')
 // const defaults = require('superagent-defaults');
 // const request = defaults()
 // request.set('User-Agent', userAgents.random())
-const request = require('superagent');
+const request = require('superagent')
 // 设置代理
-require('superagent-proxy')(request);
+require('superagent-proxy')(request)
 const cheerio = require('cheerio')
 const fs = require('fs-extra')
 const path = require('path')
-const sanitize = require("sanitize-filename")
+const sanitize = require('sanitize-filename')
+const download = require('download')
 
 const Log2f = require('./assets/log2file')
 const utils = require('./assets/utils')
@@ -24,6 +25,7 @@ let options = {
   numberingFolder: false,       // 用数字编号文件夹
   numberingFile: false,         // 用数字编号文件
   ignoreExistsFolder: true,     // 跳过已存在的文件夹
+  concurrentDownload: true,     // 开启并发下载
   proxy: null,                  // 是否使用代理，http://127.0.0.1:1080
   header: {                     // 定义请求头部
     "User-Agent": userAgents.default,
@@ -35,7 +37,7 @@ let log2f = new Log2f(path.join(OUT_DIR_PATH + '/crawler.log'), true)
 
 // 如果不存在output文件夹则创建一个
 if (!fs.existsSync(OUT_DIR_PATH)) {
-  fs.mkdirSync(OUT_DIR_PATH);
+  fs.mkdirSync(OUT_DIR_PATH)
   log2f.log('[创建DIR] ' + OUT_DIR_PATH)
 }
 
@@ -137,8 +139,24 @@ async function getFiles(obj, curIndex, allLength) {
     }
   }
 
-  for (let i = 0; i < fileUrlList.length; i++) {
-    await download(downPath, fileUrlList[i], i + 1, fileUrlList.length)
+  const fileCount = fileUrlList.length
+  if (options.concurrentDownload) {
+    let promises = []
+    for (let i = 0; i < fileCount; i++) {
+      promises.push(handleDownload(fileUrlList[i], downPath, i + 1, fileCount))
+
+      if (i < fileCount - 1) {
+        let waitTime = utils.random(10, 500)
+        // log2f.log(currentTip + '[并发限制等待(ms)] ', waitTime)
+        await utils.sleep(waitTime)
+      }
+
+    }
+    await Promise.all(promises)
+  } else {
+    for (let i = 0; i < fileCount; i++) {
+      await handleDownload(fileUrlList[i], downPath, i + 1, fileCount)
+    }
   }
 
 
@@ -149,13 +167,14 @@ async function getFiles(obj, curIndex, allLength) {
 
 /**
  * 下载单张图片
- * @param dir 保存路径
- * @param url  原图地址
+ * @param url         原图地址
+ * @param dir         保存路径
  * @param curIndex    可选，保存文件的编号
  * @param allLength   可选，用于显示全部文件数量
- * @param asyncFlag 是否开启异步下载，默认否
+ * @param asyncFlag   是否开启异步下载，默认否
  */
-async function download(dir, url, curIndex, allLength, asyncFlag = false) {
+async function handleDownload(url, dir, curIndex, allLength, asyncFlag = false) {
+  // TODO: 显示下载进度条？
   let currentTip = ''
   if (curIndex && allLength) {
     currentTip = `[${curIndex}/${allLength}]`
@@ -174,12 +193,12 @@ async function download(dir, url, curIndex, allLength, asyncFlag = false) {
     return
   }
 
-  let stream = fs.createWriteStream(savePath)
+  // let stream = fs.createWriteStream(savePath)
 
   if (asyncFlag) {
     // 异步下载
-    // TODO: 完善异步下载
-    log2f.log(currentTip + '[下载中] ' + url)
+
+    /*log2f.log(currentTip + '[下载中] ' + url)
     stream.on('finish', () => {
       // log2f.log(currentTip + '[已下载] ')
       resolve()
@@ -189,11 +208,28 @@ async function download(dir, url, curIndex, allLength, asyncFlag = false) {
       debugger
       reject()
     })
-    const res = request.get(url).pipe(stream)
+    const res = request.get(url).pipe(stream)*/
     await sleep(random(0, 500))
   } else {
     log2f.log(currentTip + '[下载中] ' + url)
+
     await new Promise((resolve, reject) => {
+
+      download(url, dir, {
+        filename: fileName,
+        proxy: options.proxy
+      }).then(() => {
+        log2f.log(currentTip + '[已下载] ' + savePath)
+        resolve()
+      }).catch(err => {
+        log2f.log(currentTip + '[下载失败] ', err.message, err.response)
+        debugger
+        reject()
+      })
+
+    })
+
+    /*await new Promise((resolve, reject) => {
       let req = request.get(url)
         .retry(2)
         .accept('image/jpeg')
@@ -218,7 +254,7 @@ async function download(dir, url, curIndex, allLength, asyncFlag = false) {
         debugger
         reject()
       })
-    })
+    })*/
   }
 }
 

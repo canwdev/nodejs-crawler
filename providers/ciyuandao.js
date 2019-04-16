@@ -1,10 +1,10 @@
 const domain = 'http://ciyuandao.com'
 const config = {
-  outDir: 'output',
-  fromPage: 30,
-  toPage: 31,
-  numberingFolder: true,
-  numberingFile: true,
+  outDir: 'output/cos',
+  fromPage: 1,
+  toPage: 1,
+  numberingFolder: false,
+  numberingFile: false,
 }
 
 /**

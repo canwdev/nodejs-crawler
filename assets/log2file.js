@@ -21,11 +21,11 @@ function appendZeroToLength(value, length) {
  */
 function getDateAsText() {
   var currentDate = new Date()
-  return "[" + currentDate.getFullYear() + "."
-    + (currentDate.getMonth() + 1) + "."
-    + currentDate.getDate() + " @ "
-    + currentDate.getHours() + ":"
-    + currentDate.getMinutes() + ":"
+  return "[" + currentDate.getFullYear() + "-"
+    + (currentDate.getMonth() + 1) + "-"
+    + currentDate.getDate() + " "
+    + currentDate.getHours().toString().padStart(2,'0') + ":"
+    + currentDate.getMinutes().toString().padStart(2,'0') + ":"
     + currentDate.getSeconds() + "]"
 }
 

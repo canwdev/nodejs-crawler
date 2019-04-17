@@ -5,7 +5,7 @@ const options = {
   toPage: 1,
   numberingFolder: true,
   numberingFile: true,
-  proxy: 'http://127.0.0.1:1080',
+  proxy: 'socks5://127.0.0.1:1080',
 }
 
 function getList($, data) {

@@ -1,6 +1,6 @@
 const request = require('superagent')
 // 设置代理
-require('superagent-proxy')(request)
+const superagentProxy = require('superagent-proxy')
 const cheerio = require('cheerio')
 const fs = require('fs-extra')
 const path = require('path')
@@ -22,7 +22,7 @@ let options = {
   numberingFile: false,         // 用数字编号文件
   ignoreExistsFolder: true,     // 跳过已存在的文件夹
   concurrentDownload: true,     // 开启并发下载
-  proxy: null,                  // 是否使用代理，http://127.0.0.1:1080
+  proxy: null,                  // 是否使用代理，socks5://127.0.0.1:1080
   header: {                     // 定义请求头部
     "User-Agent": userAgents.default,
   }
@@ -64,26 +64,23 @@ class Crawler {
 
       log2f.log(`[${i}/${options.toPage}][请求列表] `, url)
 
-      // TODO 使用PhantomJS实现模拟浏览器请求，解决某站301错误
-      const res = await request
-        .get(url)
-        .set(options.header)
-        .proxy(options.proxy)
-        .catch(err => {
-          log2f.log(`[${i}/${options.toPage}][请求列表失败] `, err.message, err.response)  //, err.response
-          debugger
-        })
-
-      if (res) {
+      const res = request.get(url).set(options.header)
+      if (options.proxy) {
+        res.proxy(options.proxy)
+      }
+      await res.then(res => {
         const $ = cheerio.load(res.text)
         // 仅当pnMode开启才有newUrl
         let newUrl = provider.getList($, ret)
         if (newUrl && options.pnMode) {
           url = newUrl
         }
-      } else {
-        ret.push({})
-      }
+      })
+        .catch(err => {
+          log2f.log(`[${i}/${options.toPage}][请求列表失败] `, err.message, err.response)  //, err.response
+          ret.push({})
+          debugger
+        })
 
     }
 
@@ -119,20 +116,22 @@ class Crawler {
 
     // 如果具有子页面链接
     if (obj.url) {
-      const res = await request
-        .get(obj.url)
-        .set(options.header)
-        .proxy(options.proxy)
-        .catch(err => {
-          log2f.log(currentTip + '[内容获取失败]', err.message, err.response)  //, err.response
-          debugger
-        })
-      const $ = cheerio.load(res.text)
-      fileUrlList = provider.getImageUrlList($)
+      const res = request.get(obj.url).set(options.header)
+      if (options.proxy) {
+        res.proxy(options.proxy)
+      }
+      await res.then(res => {
+        const $ = cheerio.load(res.text)
+        fileUrlList = provider.getImageUrlList($)
+
+      }).catch(err => {
+        log2f.log(currentTip + '[内容获取失败]', err.message, err.response)  //, err.response
+        debugger
+      })
+
     } else {
       fileUrlList = obj.links
     }
-
 
     const folderName = sanitize(`${folderNumber}${obj.title}`, {replacement: ' '})
     const downPath = path.join(OUT_DIR_PATH, folderName)
@@ -222,11 +221,14 @@ class Crawler {
     log2f.log(currentTip + '[下载中] ' + url)
 
     await new Promise((resolve, reject) => {
-
-      download(url, dir, {
+      let downOpt = {
         filename: fileName,
-        proxy: options.proxy
-      }).then(() => {
+      }
+      if (options.proxy) {
+        downOpt.proxy = options.proxy
+      }
+
+      download(url, dir, downOpt).then(() => {
         log2f.log(currentTip + '[已下载] ' + savePath)
         resolve()
       }).catch(err => {
@@ -248,6 +250,7 @@ class Crawler {
     }
 
     if (options.proxy) {
+      superagentProxy(request)
       log2f.log('[使用代理] ' + options.proxy)
     }
 

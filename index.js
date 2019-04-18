@@ -187,7 +187,6 @@ class Crawler {
    * @param allLength   可选，用于显示全部文件数量
    */
   async handleDownload(url, dir, curIndex, allLength) {
-    // TODO: 显示下载进度条？
     let currentTip = ''
     if (curIndex && allLength) {
       currentTip = `[${curIndex}/${allLength}]`

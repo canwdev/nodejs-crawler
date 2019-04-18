@@ -1,27 +1,33 @@
 # nodejs-crawler
 
-用来爬取网站图片
+简单的 Node.js 爬虫，用来爬取网站图片
+
+食用方式：
 
 ```js
-const Crawler = require('./index')
-const provider = require('./providers/ciyuandao')
-new Crawler(provider).run()
+npm install
+npm run dev
 ```
 
 直接运行：`node run.js`
 
 调试模式：`node --inspect-brk run.js`，执行完成后，打开Chrome随意一个页面的调试工具，可以看到一个绿色nodejs图标，点击进入调试
 
-输出目录为`./output/`
+```js
+const Crawler = require('./index')
+const provider = require('./providers/monkeyuser')
+new Crawler(provider).run()
+```
 
-# provider 文档
+默认输出目录为`./output/`
+
+## provider 配置说明
 
 `provider/`是爬虫处理的配置文件夹，包含了一些demo脚本，可以通过编写脚本实现针对特定网站的爬取，目前仅支持列表到详情页的静态资源爬取
 
-
 ```js
-// 定义配置，参考index.js
-const config = {
+// 定义配置，参考index.js里面的注释
+const options = {
 }
 
 /**
@@ -43,9 +49,13 @@ function getImageUrlList($) {
 
 
 module.exports = {
-  config,
+  options,
   listUrl: i => 'http://example.com/page/' + i,   // 返回第i页的地址
   getList,
   getImageUrlList
 }
 ```
+
+## 参考
+
+- [没想到你是这样的程序员（node.js 爬虫 萌新起步教程）](https://zhuanlan.zhihu.com/p/33722307)

@@ -1,5 +1,7 @@
 # nodejs-crawler
 
+![logo](assets/logo.png)
+
 简单的 Node.js 爬虫，用来爬取网站图片
 
 食用方式：

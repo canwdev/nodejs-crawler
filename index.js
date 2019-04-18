@@ -6,6 +6,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const sanitize = require('sanitize-filename')
 const download = require('download')
+const asyncPool = require('tiny-async-pool')
 
 const Log2f = require('./assets/log2file')
 const utils = require('./assets/utils')
@@ -18,10 +19,11 @@ let options = {
   fromPage: 1,                  // 爬取开始页面下标
   toPage: 1,                    // 爬取结束页面下标
   pnMode: false,                // 上一页(previous)/下一页(next)模式
+  flatFolder: false,            // 若要开启，传一个文件夹名字符串，这样下载的文件都会放在这个文件夹内
   numberingFolder: false,       // 用数字编号文件夹
   numberingFile: false,         // 用数字编号文件
   ignoreExistsFolder: true,     // 跳过已存在的文件夹
-  concurrentDownload: true,     // 开启并发下载
+  concurrent: 3,                // 并发下载数，设为false禁用并发下载
   proxy: null,                  // 是否使用代理，socks5://127.0.0.1:1080
   header: {                     // 定义请求头部
     "User-Agent": userAgents.default,
@@ -75,12 +77,11 @@ class Crawler {
         if (newUrl && options.pnMode) {
           url = newUrl
         }
+      }).catch(err => {
+        log2f.log(`[${i}/${options.toPage}][请求列表失败] `, err.message, err.response)  //, err.response
+        ret.push({})
+        debugger
       })
-        .catch(err => {
-          log2f.log(`[${i}/${options.toPage}][请求列表失败] `, err.message, err.response)  //, err.response
-          ret.push({})
-          debugger
-        })
 
     }
 
@@ -133,7 +134,7 @@ class Crawler {
       fileUrlList = obj.links
     }
 
-    const folderName = sanitize(`${folderNumber}${obj.title}`, {replacement: ' '})
+    const folderName = options.flatFolder ? options.flatFolder : sanitize(`${folderNumber}${obj.title}`, {replacement: ' '})
     const downPath = path.join(OUT_DIR_PATH, folderName)
 
     if (!fs.existsSync(downPath)) {
@@ -143,6 +144,7 @@ class Crawler {
       if (this.ignoreExistsFolder) {
         log2f.log(currentTip + '[已存在DIR，跳过] ' + downPath)
         return
+      } else if (options.flatFolder) {
       } else {
         log2f.log(currentTip + '[已存在DIR] ' + downPath)
       }
@@ -151,28 +153,20 @@ class Crawler {
     const fileCount = fileUrlList.length
 
     // 如果是pnMode，则每页只包含一张图片所以直接并发下载
-    if (options.pnMode && options.concurrentDownload) {
-      this.handleDownload(fileUrlList[0], downPath, curIndex, allLength)
-
-      let waitTime = utils.random(10, 500)
-      // log2f.log(currentTip + '[并发限制等待(ms)] ', waitTime)
-      await utils.sleep(waitTime)
+    if (options.pnMode && options.concurrent) {
+      await this.handleDownload(fileUrlList[0], downPath, curIndex, allLength)
       return
     }
 
-    if (options.concurrentDownload) {
-      let promises = []
+    if (options.concurrent) {
+      // 使用 simple-async-pool 控制并发数
+      let countArr = []
       for (let i = 0; i < fileCount; i++) {
-        promises.push(this.handleDownload(fileUrlList[i], downPath, i + 1, fileCount))
-
-        if (i < fileCount - 1) {
-          let waitTime = utils.random(10, 500)
-          // log2f.log(currentTip + '[并发限制等待(ms)] ', waitTime)
-          await utils.sleep(waitTime)
-        }
-
+        countArr.push(i)
       }
-      await Promise.all(promises)
+      const promiseAction = i => this.handleDownload(fileUrlList[i], downPath, i + 1, fileCount)
+      await asyncPool(options.concurrent, countArr, promiseAction)
+
     } else {
       for (let i = 0; i < fileCount; i++) {
         await this.handleDownload(fileUrlList[i], downPath, i + 1, fileCount)
@@ -180,7 +174,7 @@ class Crawler {
     }
 
 
-    let waitTime = utils.random(500, 2000)
+    let waitTime = utils.random(500, 1000)
     log2f.log(currentTip + '[列表文件下载完成，等待(ms)] ', waitTime)
     await utils.sleep(waitTime)
   }
@@ -256,15 +250,20 @@ class Crawler {
 
 
     let list = await this.getList()
-    for (let i = 0; i < list.length; i++) {
-      await this.getFiles(list[i], i + 1, list.length)
-    }
-    if (options.pnMode && options.concurrentDownload) {
-      log2f.log('=== 执行完成，请等待异步任务结束 ===\n')
-    } else {
-      log2f.log('=== 全部下载完成! ===\n')
 
+    if (options.pnMode && options.concurrent) {
+      let arr = []
+      for (let i = 0; i < list.length; i++) {
+        arr.push(i)
+      }
+      const promiseAction = i => this.getFiles(list[i], i + 1, list.length)
+      await asyncPool(options.concurrent, arr, promiseAction)
+    } else {
+      for (let i = 0; i < list.length; i++) {
+        await this.getFiles(list[i], i + 1, list.length)
+      }
     }
+    log2f.log('=== 全部下载完成! ===\n')
   }
 }
 

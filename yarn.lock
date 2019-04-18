@@ -1122,6 +1122,11 @@ seek-bzip@^1.0.5:
   dependencies:
     commander "~2.8.1"
 
+semver@^5.5.0:
+  version "5.7.0"
+  resolved "http://registry.npm.taobao.org/semver/download/semver-5.7.0.tgz#790a7cf6fea5459bac96110b29b60412dc8ff96b"
+  integrity sha1-eQp89v6lRZuslhELKbYEEtyP+Ws=
+
 semver@^6.0.0:
   version "6.0.0"
   resolved "https://registry.yarnpkg.com/semver/-/semver-6.0.0.tgz#05e359ee571e5ad7ed641a6eec1e547ba52dea65"
@@ -1274,6 +1279,14 @@ timed-out@^4.0.1:
   resolved "http://registry.npm.taobao.org/timed-out/download/timed-out-4.0.1.tgz#f32eacac5a175bea25d7fab565ab3ed8741ef56f"
   integrity sha1-8y6srFoXW+ol1/q1Zas+2HQe9W8=
 
+tiny-async-pool@^1.0.4:
+  version "1.0.4"
+  resolved "http://registry.npm.taobao.org/tiny-async-pool/download/tiny-async-pool-1.0.4.tgz#bbac28a39a754576d8d0615d4e2ad35c87da6169"
+  integrity sha1-u6woo5p1RXbY0GFdTirTXIfaYWk=
+  dependencies:
+    semver "^5.5.0"
+    yaassertion "^1.0.0"
+
 to-buffer@^1.1.1:
   version "1.1.1"
   resolved "http://registry.npm.taobao.org/to-buffer/download/to-buffer-1.1.1.tgz#493bd48f62d7c43fcded313a03dcadb2e1213a80"
@@ -1366,6 +1379,11 @@ xtend@^4.0.0:
   version "4.0.1"
   resolved "http://registry.npm.taobao.org/xtend/download/xtend-4.0.1.tgz#a5c6d532be656e23db820efb943a1f04998d63af"
   integrity sha1-pcbVMr5lbiPbgg77lDofBJmNY68=
+
+yaassertion@^1.0.0:
+  version "1.0.0"
+  resolved "http://registry.npm.taobao.org/yaassertion/download/yaassertion-1.0.0.tgz#630c5c44c660d064006f1f15d79bd256d373fc9e"
+  integrity sha1-YwxcRMZg0GQAbx8V15vSVtNz/J4=
 
 yallist@^2.1.2:
   version "2.1.2"

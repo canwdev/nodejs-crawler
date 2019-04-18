@@ -1,4 +1,4 @@
 const Crawler = require('./index')
-const provider = require('./providers/warthunderWallpaper')
+const provider = require('./providers/monkeyuser')
 
 new Crawler(provider).run()

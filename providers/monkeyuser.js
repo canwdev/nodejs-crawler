@@ -2,7 +2,7 @@ const domain = 'https://www.monkeyuser.com'
 const options = {
   outDir: 'output/monkeyuser',
   fromPage: 1,
-  toPage: 50,
+  toPage: 5,
   flatFolder: 'monkeyuser',
   pnMode: true,
   numberingFile: false,

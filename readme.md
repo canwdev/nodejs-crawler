@@ -6,14 +6,16 @@
 
 食用方式：
 
-```js
+```sh
 npm install
 npm run dev
 ```
 
 直接运行：`node run.js`
 
-调试模式：`node --inspect-brk run.js`，执行完成后，打开Chrome随意一个页面的调试工具，可以看到一个绿色nodejs图标，点击进入调试
+带参数运行：`node run.js ./providers/warthunderWallpaper.js`
+
+调试模式：`node --inspect-brk run.js`，执行完成后，打开Chrome任意页面的调试工具，可以看到一个绿色nodejs图标，点击进入调试
 
 ```js
 const Crawler = require('./index')

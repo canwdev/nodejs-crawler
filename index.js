@@ -24,6 +24,7 @@ let options = {
   numberingFile: false,         // 用数字编号文件
   ignoreExistsFolder: true,     // 跳过已存在的文件夹
   concurrent: 3,                // 并发下载数，设为false禁用并发下载
+  sleep: [0, 0],                // 下载间歇时间[毫秒]，随机暂停sleep[0]至sleep[1]的时间段，例如[500,1000]
   proxy: null,                  // 是否使用代理，socks5://127.0.0.1:1080
   header: {                     // 定义请求头部
     "User-Agent": userAgents.default,
@@ -173,10 +174,14 @@ class Crawler {
       }
     }
 
+    if (options.sleep[1] > 0) {
+      let waitTime = utils.random(options.sleep[0], options.sleep[1])
+      log2f.log(currentTip + '[列表下载完成，等待(ms)] ', waitTime)
+      await utils.sleep(waitTime)
+    }else {
+      log2f.log(currentTip + '[列表下载完成] ')
+    }
 
-    let waitTime = utils.random(500, 1000)
-    log2f.log(currentTip + '[列表文件下载完成，等待(ms)] ', waitTime)
-    await utils.sleep(waitTime)
   }
 
   /**
@@ -238,7 +243,7 @@ class Crawler {
 
     // 如果不存在output文件夹则创建一个
     if (!fs.existsSync(OUT_DIR_PATH)) {
-      fs.mkdirSync(OUT_DIR_PATH)
+      fs.mkdirSync(OUT_DIR_PATH, {recursive: true})
       log2f.log('[创建DIR] ' + OUT_DIR_PATH)
     }
 

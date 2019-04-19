@@ -15,7 +15,7 @@ npm run dev
 
 带参数运行：`node run.js ./providers/warthunderWallpaper.js`
 
-调试模式：`node --inspect-brk run.js`，执行完成后，打开Chrome任意页面的调试工具，可以看到一个绿色nodejs图标，点击进入调试
+调试模式：建议直接使用vscode的调试功能，按`F5`，或者：`node --inspect-brk run.js`，执行完成后，打开Chrome任意页面的调试工具，可以看到一个绿色nodejs图标，点击进入调试
 
 ```js
 const Crawler = require('./index')
@@ -36,7 +36,7 @@ const options = {
 
 /**
  * 处理列表数据
- * @param $     传入的一个cheerio对象用于读取dom cheerio.load(res.text)
+ * @param $     传入的一个cheerio对象用于读取dom cheerio.load(res.text)，当ajaxMode开启时$为ajax返回的结果
  * @param data  要操作的数组，返回格式约定为{url,title,links(可选)}对象构成的数组，如果不传url，则links必传
  * pnMode说明：  返回一个链接，指向上一页或下一页
  */

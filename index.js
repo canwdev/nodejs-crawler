@@ -19,11 +19,13 @@ let options = {
   fromPage: 1,                  // 爬取开始页面下标
   toPage: 1,                    // 爬取结束页面下标
   pnMode: false,                // 上一页(previous)/下一页(next)模式
+  ajaxMode: false,              // ajax获取数据的模式开关（目前仅支持GET方法)
   flatFolder: false,            // 若要开启，传一个文件夹名字符串，这样下载的文件都会放在这个文件夹内
   numberingFolder: false,       // 用数字编号文件夹
   numberingFile: false,         // 用数字编号文件
   ignoreExistsFolder: true,     // 跳过已存在的文件夹
-  concurrent: 3,                // 并发下载数，设为false禁用并发下载
+  concurrent: 3,                // 并发下载文件数，设为false禁用并发下载
+  concurrentList: false,        // 允许并发下载列表中的文件，建议在每个列表项目只有一张图片时启用，当pnMode启用时，这个选项是不必要的
   sleep: [0, 0],                // 下载间歇时间[毫秒]，随机暂停sleep[0]至sleep[1]的时间段，例如[500,1000]
   proxy: null,                  // 是否使用代理，socks5://127.0.0.1:1080
   header: {                     // 定义请求头部
@@ -33,7 +35,6 @@ let options = {
 let log2f = null
 let OUT_DIR_PATH = ''
 
-// TODO 尝试增加页面通过ajax获取数据的抓取模式
 class Crawler {
   constructor(prov) {
     // 自定义provider，实现从不同网站爬取数据
@@ -72,12 +73,15 @@ class Crawler {
         res.proxy(options.proxy)
       }
       await res.then(res => {
-        const $ = cheerio.load(res.text)
+
+        let $ = options.ajaxMode ? res.body.data : cheerio.load(res.text)
+
         // 仅当pnMode开启才有newUrl
         let newUrl = provider.getList($, ret)
         if (newUrl && options.pnMode) {
           url = newUrl
         }
+
       }).catch(err => {
         log2f.log(`[${i}/${options.toPage}][请求列表失败] `, err.message, err.response)  //, err.response
         ret.push({})
@@ -154,7 +158,7 @@ class Crawler {
     const fileCount = fileUrlList.length
 
     // 如果是pnMode，则每页只包含一张图片所以直接并发下载
-    if (options.pnMode && options.concurrent) {
+    if (options.pnMode && options.concurrent || options.concurrentList) {
       await this.handleDownload(fileUrlList[0], downPath, curIndex, allLength)
       return
     }
@@ -178,7 +182,7 @@ class Crawler {
       let waitTime = utils.random(options.sleep[0], options.sleep[1])
       log2f.log(currentTip + '[列表下载完成，等待(ms)] ', waitTime)
       await utils.sleep(waitTime)
-    }else {
+    } else {
       log2f.log(currentTip + '[列表下载完成] ')
     }
 
@@ -255,7 +259,8 @@ class Crawler {
 
     let list = await this.getList()
 
-    if (options.pnMode && options.concurrent) {
+    // 如果列表中只有一张图，就直接并发下载多个列表中的图
+    if (options.pnMode && options.concurrent || options.concurrentList) {
       let arr = []
       for (let i = 0; i < list.length; i++) {
         arr.push(i)

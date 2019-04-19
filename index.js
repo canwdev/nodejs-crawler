@@ -12,6 +12,10 @@ const Log2f = require('./assets/log2file')
 const utils = require('./assets/utils')
 const userAgents = require('./assets/userAgents')
 
+function padZero(v, l = 3) {
+  return v.toString().padStart(l, '0')
+}
+
 // const provider = require('./providers/monkeyuser')
 let provider = {}
 let options = {
@@ -50,8 +54,8 @@ class Crawler {
    */
   async getList() {
     let ret = []
-
-    log2f.log('=== 🚧 获取列表开始 🚧 ===')
+    log2f.log('🚀')
+    log2f.log('[获取列表开始] ===')
 
     let url = ''
     for (let i = options.fromPage; i <= options.toPage; i++) {
@@ -66,7 +70,7 @@ class Crawler {
         url = provider.listUrl(i)
       }
 
-      log2f.log(`[${i}/${options.toPage}][请求列表] `, url)
+      log2f.log(`[${padZero(i)}/${padZero(options.toPage)}][请求列表] `, url)
 
       const res = request.get(url).set(options.header)
       if (options.proxy) {
@@ -83,7 +87,7 @@ class Crawler {
         }
 
       }).catch(err => {
-        log2f.log(`[${i}/${options.toPage}][请求列表失败] `, err.message, err.response)  //, err.response
+        log2f.log(`[${i}/${options.toPage}][ERR][请求列表失败] `, err.message, err.response)  //, err.response
         ret.push({})
         debugger
       })
@@ -92,7 +96,7 @@ class Crawler {
 
 
     Log2f.slog(JSON.stringify(ret), path.join(OUT_DIR_PATH + '/resource.log'))
-    log2f.log('=== 🚧 列表获取完成 🚧 ===\n')
+    log2f.log('[列表获取完成] ===')
 
     return ret
   }
@@ -107,16 +111,16 @@ class Crawler {
   async getFiles(obj, curIndex, allLength) {
     let currentTip = ''
     if (curIndex && allLength) {
-      currentTip = `[${curIndex}/${allLength}]`
+      currentTip = `[${padZero(curIndex)}/${padZero(allLength)}]`
     }
 
     if (Object.keys(obj).length === 0) {
-      log2f.log(currentTip + ' 内容为空，跳过')
+      log2f.log(currentTip + ' [ERR][内容为空，跳过]')
       return
     }
 
     // 下载文件夹标号
-    let folderNumber = options.numberingFolder ? curIndex.toString().padStart(3, '0') + '__' : ''
+    let folderNumber = options.numberingFolder ? padZero(curIndex) + '__' : ''
     // 要下载的文件链接数组
     let fileUrlList = []
 
@@ -131,7 +135,7 @@ class Crawler {
         fileUrlList = provider.getImageUrlList($)
 
       }).catch(err => {
-        log2f.log(currentTip + '[内容获取失败]', err.message, err.response)  //, err.response
+        log2f.log(currentTip + '[ERR][内容获取失败] ', err.message, err.response)  //, err.response
         debugger
       })
 
@@ -144,14 +148,14 @@ class Crawler {
 
     if (!fs.existsSync(downPath)) {
       await fs.mkdir(downPath)
-      log2f.log(currentTip + '[创建DIR] ' + downPath)
+      log2f.log(currentTip + '[创建目录] ' + downPath)
     } else {
       if (this.ignoreExistsFolder) {
-        log2f.log(currentTip + '[已存在DIR，跳过] ' + downPath)
+        log2f.log(currentTip + '[已存在目录，跳过] ' + downPath)
         return
       } else if (options.flatFolder) {
       } else {
-        log2f.log(currentTip + '[已存在DIR] ' + downPath)
+        log2f.log(currentTip + '[已存在目录] ' + downPath)
       }
     }
 
@@ -198,20 +202,20 @@ class Crawler {
   async handleDownload(url, dir, curIndex, allLength) {
     let currentTip = ''
     if (curIndex && allLength) {
-      currentTip = `[${curIndex}/${allLength}]`
+      currentTip = `▶[${padZero(curIndex,2)}/${padZero(allLength,2)}]`
     }
     // 去除无用后缀（原图）
     if (url) {
       url = url.split('?')[0]
     } else {
-      log2f.log(currentTip + '[下载失败，无效的链接]')
+      log2f.log(currentTip + '[ERR][下载失败，无效的链接]')
       return
     }
 
 
     let fileName = url.split('/').pop()
     if (options.numberingFile && curIndex) {
-      fileName = curIndex.toString().padStart(3, '0') + '.' + fileName
+      fileName = padZero(curIndex) + '.' + fileName
     }
 
     const savePath = path.join(dir, fileName)
@@ -234,7 +238,7 @@ class Crawler {
         log2f.log(currentTip + '[已下载] ' + savePath)
         resolve()
       }).catch(err => {
-        log2f.log(currentTip + '[下载失败] ', err.message, err.response)
+        log2f.log(currentTip + '[ERR][下载失败] ', err.message, err.response)
         debugger
         reject()
       })
@@ -248,7 +252,7 @@ class Crawler {
     // 如果不存在output文件夹则创建一个
     if (!fs.existsSync(OUT_DIR_PATH)) {
       fs.mkdirSync(OUT_DIR_PATH, {recursive: true})
-      log2f.log('[创建DIR] ' + OUT_DIR_PATH)
+      log2f.log('[创建目录] ' + OUT_DIR_PATH)
     }
 
     if (options.proxy) {
@@ -272,7 +276,7 @@ class Crawler {
         await this.getFiles(list[i], i + 1, list.length)
       }
     }
-    log2f.log('=== 全部下载完成! ===\n')
+    log2f.log('[全部下载完成!] ===\n')
   }
 }
 

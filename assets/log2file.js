@@ -15,6 +15,10 @@ function appendZeroToLength(value, length) {
   return `${value}`.padStart(length, 0)
 }
 
+function padZero(v, l = 2) {
+  return v.toString().padStart(l, '0')
+}
+
 /**
  * Get date as text.
  * @returns {string} Date as text. Sample: "2018.12.03, 07:32:13.0162 UTC".
@@ -22,11 +26,11 @@ function appendZeroToLength(value, length) {
 function getDateAsText() {
   var currentDate = new Date()
   return "[" + currentDate.getFullYear() + "-"
-    + (currentDate.getMonth() + 1) + "-"
-    + currentDate.getDate() + " "
-    + currentDate.getHours().toString().padStart(2,'0') + ":"
-    + currentDate.getMinutes().toString().padStart(2,'0') + ":"
-    + currentDate.getSeconds() + "]"
+    + padZero((currentDate.getMonth() + 1)) + "-"
+    + padZero(currentDate.getDate()) + " "
+    + padZero(currentDate.getHours()) + ":"
+    + padZero(currentDate.getMinutes()) + ":"
+    + padZero(currentDate.getSeconds()) + "]"
 }
 
 /**
@@ -39,7 +43,7 @@ function logToFile(text, file) {
   const filename = file ? file : 'default.log'
 
   // Define log text.
-  const logText = getDateAsText() + '' + text + '\r\n'
+  const logText = getDateAsText() + ' ' + text + '\r\n'
 
   // Save log to file.
   fs.appendFile(filename, logText, 'utf8', function (error) {
@@ -63,7 +67,7 @@ class Log2f {
 
   log(...text) {
     if (this.print) {
-      console.log(...text)
+      console.log(getDateAsText(), ...text)
     }
     let str = ''
     let args = [...text]

@@ -35,20 +35,32 @@ const options = {
 }
 
 /**
- * 处理列表数据
- * @param $     传入的一个cheerio对象用于读取dom cheerio.load(res.text)，当ajaxMode开启时$为ajax返回的结果
- * @param data  要操作的数组，返回格式约定为{url,title,links(可选)}对象构成的数组，如果不传url，则links必传
- * pnMode说明：  返回一个链接，指向上一页或下一页
+ * 处理列表页数据
+ * @param $        传入的一个cheerio对象用于读取dom cheerio.load(res.text)；当ajaxMode开启时$为ajax返回的结果
+ * @param data    要操作的数组，返回格式约定为{url,title,links(可选),customize(可选)}对象构成的数组，url是指向详情页的链接，title用来命名保存文件夹，如果不传url，则links必传
+ * customize说明：高级功能，可在data中以放置一个包含自定义信息的customize对象，这样可以控制下载详情页的内容
+ * pnMode说明：   返回一个链接，指向上一页或下一页
  */
 function getList($, data) {
 }
 
 /**
- * 获取图片下载链接数组
- * @param $   传入的一个cheerio对象用于读取dom cheerio.load(res.text)
- * @returns {Array} 图片链接的数组
+ * 获取详情页图片下载链接数组
+ * @param $           传入的一个cheerio对象用于读取dom cheerio.load(res.text)
+ * @param extraData   当customize开启时，接收第二个参数extraData，为getList输出的customize对象
+ * @returns {Array}   图片链接的数组；当customize开启时，返回自定义对象，用于customizeDownload
  */
-function getImageUrlList($) {
+function getDetailData($, extraData) {
+}
+
+/**
+ * 可以通过这个函数完全控制下载以及文件保存
+ * @param data      可下载的数据
+ * @param downPath  下载文件保存的根目录
+ * @param handleDownload  [可选] 可使用预置的下载方式
+  */
+async function customizeDownload(data, downPath, handleDownload) {
+
 }
 
 
@@ -56,7 +68,7 @@ module.exports = {
   options,
   listUrl: i => 'http://example.com/page/' + i,   // 返回第i页的地址
   getList,
-  getImageUrlList
+  getDetailData
 }
 ```
 

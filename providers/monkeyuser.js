@@ -25,7 +25,7 @@ function getList($, data) {
   return newUrl
 }
 
-function getImageUrlList($) {
+function getDetailData($) {
   return null
 }
 
@@ -33,5 +33,5 @@ module.exports = {
   options,
   listUrl: () => domain + '',
   getList,
-  getImageUrlList
+  getDetailData
 }

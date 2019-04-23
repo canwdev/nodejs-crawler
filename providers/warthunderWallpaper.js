@@ -26,7 +26,7 @@ function getList($, data) {
   })
 }
 
-function getImageUrlList($) {
+function getDetailData($) {
   return null
 }
 
@@ -34,5 +34,5 @@ module.exports = {
   options,
   listUrl: i => domain + '/en/media/wallpapers/page/' + i,
   getList,
-  getImageUrlList
+  getDetailData
 }

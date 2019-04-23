@@ -24,7 +24,7 @@ function getList($, data) {
 }
 
 
-function getImageUrlList($) {
+function getDetailData($) {
   return null
 }
 
@@ -32,5 +32,5 @@ module.exports = {
   options,
   listUrl: i => `https://api.vc.bilibili.com/link_draw/v1/doc/doc_list?uid=6823116&page_num=${i}&page_size=30&biz=all`,
   getList,
-  getImageUrlList
+  getDetailData
 }

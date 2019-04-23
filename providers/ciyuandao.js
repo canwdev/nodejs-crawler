@@ -20,7 +20,7 @@ function getList($, data) {
   })
 }
 
-function getImageUrlList($) {
+function getDetailData($) {
   let $imgWarps = $('.talk_pic p')
   let ret = []
 
@@ -35,5 +35,5 @@ module.exports = {
   options,
   listUrl: i => domain + '/photo/index/0-0-' + i,
   getList,
-  getImageUrlList
+  getDetailData
 }

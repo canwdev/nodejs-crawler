@@ -87,7 +87,7 @@ class Crawler {
         }
 
       }).catch(err => {
-        log2f.log(`[${i}/${options.toPage}][ERR][请求列表失败] `, err.message, err.response)  //, err.response
+        log2f.log(`[${i}/${options.toPage}][ERR][请求列表失败] `, err.message, err.response) //, err.response
         ret.push({})
         debugger
       })
@@ -104,13 +104,13 @@ class Crawler {
   /**
    * 获取单个图集内的所有图片，创建下载文件夹并下载
    * @param obj
-   * @param curIndex    可选，用于显示当前下载个数
-   * @param allLength   可选，用于显示全部文件数量
+   * @param curIndex    [可选] 用于显示当前下载个数（请从1开始）
+   * @param allLength   [可选] 用于显示全部文件数量
    * @returns {Promise<void>}
    */
   async getFiles(obj, curIndex, allLength) {
     let currentTip = ''
-    if (curIndex && allLength) {
+    if ( curIndex !== undefined && allLength) {
       currentTip = `[${padZero(curIndex)}/${padZero(allLength)}]`
     }
 
@@ -123,27 +123,40 @@ class Crawler {
     let folderNumber = options.numberingFolder ? padZero(curIndex) + '__' : ''
     // 要下载的文件链接数组
     let fileUrlList = []
+    // 仅当obj.customize才有效
+    let customizeData = null
 
     // 如果具有子页面链接
     if (obj.url) {
+
+      // 直接获取详情页中的图片
       const res = request.get(obj.url).set(options.header)
       if (options.proxy) {
         res.proxy(options.proxy)
       }
       await res.then(res => {
-        const $ = cheerio.load(res.text)
-        fileUrlList = provider.getImageUrlList($)
+        const $ = cheerio.load(res.text,{decodeEntities: false})
+        if (obj.customize) {
+          // 实现自定义下载功能
+          customizeData = provider.getDetailData($, obj.customize)
+        } else {
+          // 直接获取详情页的图片
+          fileUrlList = provider.getDetailData($)
+        }
 
       }).catch(err => {
-        log2f.log(currentTip + '[ERR][内容获取失败] ', err.message, err.response)  //, err.response
+        log2f.log(currentTip + '[ERR][内容获取失败] ', err.message, err.response) //, err.response
         debugger
       })
 
     } else {
+      // 直接下载links里面的图片
       fileUrlList = obj.links
     }
 
-    const folderName = options.flatFolder ? options.flatFolder : sanitize(`${folderNumber}${obj.title}`, {replacement: ' '})
+    const folderName = options.flatFolder ? options.flatFolder : sanitize(`${folderNumber}${obj.title}`, {
+      replacement: ' '
+    })
     const downPath = path.join(OUT_DIR_PATH, folderName)
 
     if (!fs.existsSync(downPath)) {
@@ -153,10 +166,15 @@ class Crawler {
       if (this.ignoreExistsFolder) {
         log2f.log(currentTip + '[已存在目录，跳过] ' + downPath)
         return
-      } else if (options.flatFolder) {
-      } else {
+      } else if (options.flatFolder) {} else {
         log2f.log(currentTip + '[已存在目录] ' + downPath)
       }
+    }
+
+    // 如果开启了obj.customize，则完全使用provider提供的customizeDownload下载方式
+    if (obj.customize) {
+      await provider.customizeDownload(customizeData, downPath, this.handleDownload)
+      return
     }
 
     const fileCount = fileUrlList.length
@@ -182,6 +200,7 @@ class Crawler {
       }
     }
 
+    // 是否设置等待时间
     if (options.sleep[1] > 0) {
       let waitTime = utils.random(options.sleep[0], options.sleep[1])
       log2f.log(currentTip + '[列表下载完成，等待(ms)] ', waitTime)
@@ -196,12 +215,12 @@ class Crawler {
    * 下载单张图片
    * @param url         原图地址
    * @param dir         保存路径
-   * @param curIndex    可选，保存文件的编号
-   * @param allLength   可选，用于显示全部文件数量
+   * @param curIndex    [可选] 保存文件的编号（请从1开始）
+   * @param allLength   [可选] 用于显示全部文件数量
    */
   async handleDownload(url, dir, curIndex, allLength) {
     let currentTip = ''
-    if (curIndex && allLength) {
+    if (curIndex !== undefined && allLength) {
       currentTip = `▶[${padZero(curIndex,2)}/${padZero(allLength,2)}]`
     }
     // 去除无用后缀（原图）
@@ -214,7 +233,7 @@ class Crawler {
 
 
     let fileName = url.split('/').pop()
-    if (options.numberingFile && curIndex) {
+    if (options.numberingFile && curIndex !== undefined) {
       fileName = padZero(curIndex) + '.' + fileName
     }
 
@@ -251,7 +270,9 @@ class Crawler {
 
     // 如果不存在output文件夹则创建一个
     if (!fs.existsSync(OUT_DIR_PATH)) {
-      fs.mkdirSync(OUT_DIR_PATH, {recursive: true})
+      fs.mkdirSync(OUT_DIR_PATH, {
+        recursive: true
+      })
       log2f.log('[创建目录] ' + OUT_DIR_PATH)
     }
 

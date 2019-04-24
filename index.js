@@ -124,7 +124,7 @@ class Crawler {
     // 要下载的文件链接数组
     let fileUrlList = []
     // 仅当obj.customize才有效
-    let customizeData = null
+    let customizeData = obj.customize
 
     // 如果具有子页面链接
     if (obj.url) {
